@@ -37,17 +37,12 @@ Before running the converter, ensure you have:
 
 ## Installation
 
-1. **Download the converter script**:
-   ```bash
-   # Save the script as converter.py
-   ```
-
-2. **Install required dependencies**:
+1. **Install required dependencies**:
    ```bash
    pip install google-generativeai
    ```
 
-3. **Set up your Gemini API key**:
+2. **Set up your Gemini API key**:
    ```bash
    export GEMINI_API_KEY="your_api_key_here"
    ```
