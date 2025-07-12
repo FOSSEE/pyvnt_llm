@@ -436,7 +436,9 @@ def main():
             if saved_path:
                 print(f"📂 File location: {saved_path}")
                 if mode == ConversionMode.CASE_TO_PYVNT:
-                    print("📦 All Python files are now saved in the pyvnt_package directory!")
+                    print(f"\n✅ '{filename}' has been generated in the pyvnt_package directory.")
+                    print(f"👉 Head over to the pyvnt_package directory to run the generated file:\n")
+                    print(f"   cd pyvnt_package && python3 {filename}\n")
     else:
         print("❌ Conversion failed.")
 
