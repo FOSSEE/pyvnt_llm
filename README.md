@@ -1,5 +1,3 @@
-This repository brings together two AI-powered tools for OpenFOAM and pyvnt users:
-
 ---
 
 ## FoamGen
