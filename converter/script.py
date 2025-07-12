@@ -12,6 +12,7 @@ import threading
 import time
 import google.generativeai as genai
 from pathlib import Path
+from datetime import datetime
 
 class LoadingIndicator:
     """A simple loading indicator with animated dots"""
@@ -48,14 +49,51 @@ class ConversionMode:
     CASE_TO_PYVNT = "case_to_pyvnt"
     PYVNT_TO_CASE = "pyvnt_to_case"
 
+def create_output_directories():
+    """Create output directories if they don't exist"""
+    directories = {
+        'python': Path("pyvnt_package"),  # Changed from "generated_python_files"
+        'text': Path("generated_text_files")
+    }
+    
+    for dir_type, directory in directories.items():
+        try:
+            directory.mkdir(exist_ok=True)
+            print(f"✅ Directory ready: {directory}")
+        except Exception as e:
+            print(f"❌ Error creating directory {directory}: {e}")
+            sys.exit(1)
+    
+    return directories
+
+def get_output_filename(mode, custom_name=None):
+    """Generate appropriate filename with timestamp"""
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    if custom_name:
+        # Use custom name but ensure correct extension
+        if mode == ConversionMode.CASE_TO_PYVNT:
+            if not custom_name.endswith('.py'):
+                custom_name += '.py'
+        else:
+            if not custom_name.endswith('.txt'):
+                custom_name += '.txt'
+        return custom_name
+    
+    # Generate default filename with timestamp
+    if mode == ConversionMode.CASE_TO_PYVNT:
+        return f"pyvnt_code_{timestamp}.py"
+    else:
+        return f"openfoam_case_{timestamp}.txt"
+
 def load_context(mode):
     """Load the appropriate context based on conversion mode"""
     if mode == ConversionMode.CASE_TO_PYVNT:
-        context_file = Path("context_updated.md")
+        context_file = Path("context_case_to_trees.md")
         fallback_context = get_case_to_pyvnt_context()
     else:
         # Use your specific context file name
-        context_file = Path("context_pyvnt_to_trees.md")
+        context_file = Path("context_trees_to_case.md")
         fallback_context = get_pyvnt_to_openfoam_context()
     
     if not context_file.exists():
@@ -312,19 +350,35 @@ def pyvnt_to_case_conversion(model, context, pyvnt_code):
         print(f"❌ Error generating case file: {e}")
         return None
 
-def save_output(content, filename, mode):
-    """Save the generated content to a file"""
+def save_output(content, filename, mode, directories):
+    """Save the generated content to appropriate directory"""
     try:
-        with open(filename, 'w', encoding='utf-8') as f:
+        if mode == ConversionMode.CASE_TO_PYVNT:
+            # Save Python files to pyvnt_package directory
+            filepath = directories['python'] / filename
+            print(f"\n📦 Saving Python file to pyvnt_package directory...")
+        else:
+            # Save text files to generated_text_files directory
+            filepath = directories['text'] / filename
+            print(f"\n📄 Saving text file to generated_text_files directory...")
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
             f.write(content)
-        print(f"\n✅ Generated content saved to: {filename}")
+        
+        print(f"✅ Generated content saved to: {filepath}")
+        return str(filepath)
     except Exception as e:
         print(f"❌ Error saving file: {e}")
+        return None
 
 def main():
     """Main function"""
+    # Create output directories
+    print("📁 Setting up output directories...")
+    directories = create_output_directories()
+    
     # Setup Gemini (needed for both conversion modes now)
-    print("🤖 Initializing AI converter...")
+    print("\n🤖 Initializing AI converter...")
     model = setup_gemini()
     print("✅ AI converter ready!")
     
@@ -345,10 +399,8 @@ def main():
     # Perform conversion based on mode (both now use Gemini!)
     if mode == ConversionMode.CASE_TO_PYVNT:
         result = case_to_pyvnt_conversion(model, context, input_content)
-        default_filename = "generated_pyvnt_code.py"
     else:
         result = pyvnt_to_case_conversion(model, context, input_content)
-        default_filename = "generated_case_file.txt"
     
     if result:
         # Clean up the result (remove any markdown formatting if present)
@@ -371,10 +423,20 @@ def main():
         # Ask if user wants to save
         save_choice = input("\n💾 Save this result to a file? (y/n): ").strip().lower()
         if save_choice in ['y', 'yes', '']:
-            filename = input(f"📁 Enter filename (default: {default_filename}): ").strip()
+            # Get custom filename or use default
+            suggested_filename = get_output_filename(mode)
+            filename = input(f"📁 Enter filename (default: {suggested_filename}): ").strip()
             if not filename:
-                filename = default_filename
-            save_output(result, filename, mode)
+                filename = suggested_filename
+            else:
+                filename = get_output_filename(mode, filename)
+            
+            # Save to appropriate directory
+            saved_path = save_output(result, filename, mode, directories)
+            if saved_path:
+                print(f"📂 File location: {saved_path}")
+                if mode == ConversionMode.CASE_TO_PYVNT:
+                    print("📦 All Python files are now saved in the pyvnt_package directory!")
     else:
         print("❌ Conversion failed.")
 
