@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFOAM Dictionary Converter</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism.min.css">    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .converter-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .converter-header h1 {
+            margin: 0;
+            font-size: 2rem;
+        }
+        .converter-container {
+            margin: 20px auto;
+            max-width: 1200px;
+            padding: 0 15px;
+        }
+        .input-section, .output-section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .code-editor {
+            height: 300px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            resize: vertical;
+            overflow-y: auto;
+            background: #f8f9fa;
+            transition: border-color 0.3s ease;
+        }
+        .code-editor:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .output-panel {
+            height: 300px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            white-space: pre-wrap;
+        }
+        .converter-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .btn-convert {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        .btn-convert:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+            color: white;
+        }
+        .btn-secondary-custom {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        .btn-secondary-custom:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            color: white;
+        }
+        .status-indicator {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin: 5px;
+            display: inline-block;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .loading-spinner {
+            display: none;
+            margin: 10px;
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .converter-header {
+                padding: 15px 0;
+            }
+            .converter-header h1 {
+                font-size: 1.5rem;
+            }
+            .converter-container {
+                margin: 10px auto;
+                padding: 0 10px;
+            }
+            .input-section, .output-section {
+                padding: 15px;
+                margin: 10px 0;
+            }
+            .code-editor, .output-panel {
+                height: 250px;
+                font-size: 12px;
+                padding: 10px;
+            }
+            .converter-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            .converter-buttons .btn {
+                width: 100%;
+                max-width: 250px;
+                margin: 5px 0;
+            }
+            .status-indicator {
+                display: block;
+                text-align: center;
+                margin: 5px 0;
+            }
+        }
+        
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .converter-header h1 {
+                font-size: 1.3rem;
+            }
+            .code-editor, .output-panel {
+                height: 200px;
+                font-size: 11px;
+            }
+            .input-section, .output-section {
+                padding: 10px;
+            }
+        }
+        
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .converter-header {
+                padding: 10px 0;
+            }
+            .converter-header h1 {
+                font-size: 1.3rem;
+            }
+            .code-editor, .output-panel {
+                height: 150px;            }
+            .converter-container {
+                margin: 5px auto;
+            }
+        }
+        
+        .btn-convert:disabled {
+            background: #6c757d;
+            transform: none;
+            box-shadow: none;
+        }
+        .example-section {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .status-indicator {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin: 5px;
+            display: inline-block;
+        }
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .loading-spinner {
+            display: none;
+        }
+        pre {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-x: auto;
+            max-height: 400px;
+        }
+        .tree-output {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            border-radius: 10px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        .copy-button:hover {
+            background: #5a6268;
+            color: white;
+        }
+        .output-container {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <div class="converter-header">
+        <div class="container">
+            <h1><i class="fas fa-exchange-alt me-3"></i>OpenFOAM Dictionary Converter</h1>
+            <p class="lead mb-0">Convert OpenFOAM dictionaries to PyVnt Python code</p>
+        </div>
+    </div>
+
+    <div class="container converter-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3><i class="fas fa-cogs me-2"></i>System Status</h3>
+                    <a href="/" class="btn btn-outline-primary">
+                        <i class="fas fa-home me-2"></i>Back to Home
+                    </a>
+                </div>
+                
+                <div class="mb-4">
+                    {% if pyvnt_available %}
+                    <span class="status-indicator status-success">
+                        <i class="fas fa-check me-2"></i>PyVnt Available
+                    </span>
+                    {% else %}
+                    <span class="status-indicator status-error">
+                        <i class="fas fa-times me-2"></i>PyVnt Not Available
+                    </span>
+                    {% endif %}
+                    <span class="status-indicator status-success">
+                        <i class="fas fa-robot me-2"></i>AI Converter Ready
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-6">
+                <div class="input-section">
+                    <h4><i class="fas fa-file-code me-2"></i>OpenFOAM Dictionary Input</h4>
+                    <p class="text-muted">Paste your OpenFOAM dictionary content below:</p>
+                    
+                    <textarea class="form-control code-editor" id="openfoam-input" placeholder="Paste your OpenFOAM dictionary here...
+For example:
+
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application     icoFoam;
+startFrom       startTime;
+startTime       0;
+stopAt          endTime;
+endTime         0.5;
+deltaT          0.005;"></textarea>
+                      <div class="converter-buttons mt-3">
+                        <button class="btn btn-convert" id="convert-button" onclick="convertDictionary()">
+                            <span class="loading-spinner spinner-border spinner-border-sm me-2" id="loading-spinner"></span>
+                            <i class="fas fa-magic me-2"></i>Convert to PyVnt
+                        </button>
+                        <button class="btn btn-secondary-custom" onclick="loadExample()">
+                            <i class="fas fa-lightbulb me-2"></i>Load Example
+                        </button>
+                        <button class="btn btn-secondary-custom" onclick="clearInput()">
+                            <i class="fas fa-trash me-2"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div class="output-section">
+                    <h4><i class="fas fa-code me-2"></i>Generated PyVnt Code</h4>
+                    <p class="text-muted">AI-generated Python code using PyVnt:</p>
+                    
+                    <div class="output-container">
+                        <button class="copy-button" onclick="copyCode()" id="copy-button" style="display: none;">
+                            <i class="fas fa-copy me-1"></i>Copy
+                        </button>
+                        <div class="output-panel" id="pyvnt-output">// Generated PyVnt code will appear here...</div>
+                    </div>
+                </div>
+
+                <div class="output-section" id="tree-section" style="display: none;">
+                    <h4><i class="fas fa-sitemap me-2"></i>Tree Visualization</h4>
+                    <p class="text-muted">Visual representation of the generated tree:</p>
+                    
+                    <div class="tree-output" id="tree-output">
+                        // Tree visualization will appear here...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="example-section">
+                    <h5><i class="fas fa-info-circle me-2"></i>How It Works</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-paste me-2 text-primary"></i>1. Input</h6>
+                            <p>Paste your OpenFOAM dictionary content (controlDict, blockMeshDict, fvSchemes, etc.)</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-robot me-2 text-success"></i>2. AI Processing</h6>
+                            <p>AI analyzes the structure and converts it to proper PyVnt Python syntax</p>
+                        </div>
+                        <div class="col-md-4">
+                            <h6><i class="fas fa-code me-2 text-info"></i>3. Output</h6>
+                            <p>Get executable Python code and tree visualization of your OpenFOAM configuration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/plugins/autoloader/prism-autoloader.min.js"></script>
+    
+    <script>
+        function loadExample() {
+            const exampleContent = `FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      controlDict;
+}
+
+application     icoFoam;
+
+startFrom       startTime;
+
+startTime       0;
+
+stopAt          endTime;
+
+endTime         0.5;
+
+deltaT          0.005;
+
+writeControl    timeStep;
+
+writeInterval   20;
+
+writeFormat     ascii;
+
+writePrecision  6;
+
+writeCompression off;
+
+timeFormat      general;
+
+timePrecision   6;
+
+runTimeModifiable true;`;
+            
+            document.getElementById('openfoam-input').value = exampleContent;
+        }
+
+        async function convertDictionary() {
+            const input = document.getElementById('openfoam-input').value.trim();
+            const button = document.getElementById('convert-button');
+            const spinner = document.getElementById('loading-spinner');
+            const output = document.getElementById('pyvnt-output');
+            const copyButton = document.getElementById('copy-button');
+            const treeSection = document.getElementById('tree-section');
+            const treeOutput = document.getElementById('tree-output');
+            
+            if (!input) {
+                alert('Please enter some OpenFOAM dictionary content first.');
+                return;
+            }
+            
+            // Show loading state
+            button.disabled = true;
+            spinner.style.display = 'inline-block';
+            output.textContent = 'Converting...';
+            copyButton.style.display = 'none';
+            treeSection.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/convert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ content: input })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    output.textContent = data.pyvnt_code;
+                    copyButton.style.display = 'block';
+                    
+                    // Show tree output if available
+                    if (data.tree_output) {
+                        treeOutput.textContent = data.tree_output;
+                        treeSection.style.display = 'block';
+                    }
+                    
+                    // Re-highlight syntax
+                    Prism.highlightElement(output);
+                } else {
+                    output.textContent = `Error: ${data.error}\n\nTraceback:\n${data.traceback || 'No traceback available'}`;
+                }
+                
+            } catch (error) {
+                output.textContent = `Network Error: ${error.message}`;
+            } finally {
+                // Hide loading state
+                button.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+          function copyCode() {
+            const output = document.getElementById('pyvnt-output');
+            const text = output.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const button = document.getElementById('copy-button');
+                const originalText = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                button.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.background = '#6c757d';
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy to clipboard');
+                console.error('Copy failed:', err);
+            });
+        }
+        
+        function clearInput() {
+            document.getElementById('openfoam-input').value = '';
+            document.getElementById('pyvnt-output').textContent = '// Generated PyVnt code will appear here...';
+            document.getElementById('copy-button').style.display = 'none';
+            document.getElementById('tree-section').style.display = 'none';
+        }
+        
+        // Auto-resize textarea
+        const textarea = document.getElementById('openfoam-input');
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.max(300, this.scrollHeight) + 'px';
+        });
+        
+        // Add Enter key support for mobile
+        textarea.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                convertDictionary();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFOAM AI Assistant</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .hero-section {
+            padding: 100px 0;
+            color: rgb(0, 0, 0);
+            text-align: center;
+        }
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+        .btn-custom {
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        .btn-primary-custom {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+        .btn-primary-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            color: white;
+        }
+        .btn-secondary-custom {
+            background: #6c757d;
+            color: white;
+            border: none;
+        }
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin: 2px 5px;
+            display: inline-block;
+        }
+        .status-available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-unavailable {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-badges {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        /* Responsive card content */
+        .card-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .card-actions {
+            margin-top: auto;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="container">
+            <h1 class="display-3 mb-4">
+                <i class="fas fa-water me-3"></i>
+                OpenFOAM AI Assistant
+            </h1>
+            <p class="lead mb-5">
+                Advanced AI-powered tools for OpenFOAM configuration, analysis, and development
+            </p>              <div class="row mt-5 justify-content-center">
+                
+                  <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-content">
+                            <div class="feature-icon text-success">
+                                <i class="fas fa-comments-dollar"></i>
+                            </div>
+                            <h3>AI Chat with Converter</h3>
+                            <p>Interactive chat with integrated OpenFOAM to PyVnt conversion. Choose output type: text responses, converted code, or both!</p>
+                            <div class="status-badges">
+                                {% if pyvnt_available %}
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-check"></i> PyVnt Available
+                                </span>
+                                {% else %}
+                                <span class="status-badge status-unavailable">
+                                    <i class="fas fa-times"></i> PyVnt Unavailable
+                                </span>
+                                {% endif %}
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-magic"></i> Integrated Converter
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <a href="/chat" class="btn btn-primary-custom w-100">
+                                <i class="fas fa-comment-dots me-2"></i>Start Enhanced Chat
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-content">
+                            <div class="feature-icon text-primary">
+                                <i class="fas fa-file-code"></i>
+                            </div>
+                            <h3>🆕 AI File Generator</h3>
+                            <p>Generate OpenFOAM files directly from natural language prompts! Create controlDict, fvSchemes, blockMeshDict, and more with AI assistance.</p>
+                            <div class="status-badges">
+                                {% if pyvnt_llm_available %}
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-robot"></i> AI Generator Ready
+                                </span>
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-magic"></i> PyVnt LLM Integration
+                                </span>
+                                {% else %}
+                                <span class="status-badge status-unavailable">
+                                    <i class="fas fa-times"></i> PyVnt LLM Unavailable
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            {% if pyvnt_llm_available %}
+                            <a href="/generator" class="btn btn-primary-custom w-100">
+                                <i class="fas fa-wand-magic-sparkles me-2"></i>Generate Files
+                            </a>
+                            {% else %}
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-lock me-2"></i>Feature Unavailable
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4 col-md-6 col-sm-12 mb-4">
+                    <div class="feature-card h-100">
+                        <div class="card-content">
+                            <div class="feature-icon text-info">
+                                <i class="fas fa-info-circle"></i>
+                            </div>
+                            <h3>Getting Started</h3>
+                            <p>New to OpenFOAM AI Assistant? Learn how to use our tools effectively and get the most out of your OpenFOAM workflow.</p>
+                            <div class="status-badges">
+                                <span class="status-badge status-available">
+                                    <i class="fas fa-book"></i> Documentation Ready
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <a href="#" class="btn btn-primary-custom w-100" onclick="showGettingStarted()">
+                                <i class="fas fa-rocket me-2"></i>Learn More
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+       
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function showGettingStarted() {
+            const modal = new bootstrap.Modal(document.getElementById('gettingStartedModal'));
+            modal.show();
+        }
+        
+        // Add smooth scrolling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add fade-in animation to feature cards
+            const cards = document.querySelectorAll('.feature-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.classList.add('fade-in');
+                }, index * 200);
+            });
+        });
+    </script>
+    
+    <!-- Getting Started Modal -->
+    <div class="modal fade" id="gettingStartedModal" tabindex="-1" aria-labelledby="gettingStartedModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(45deg, #667eea, #764ba2); color: white;">
+                    <h5 class="modal-title" id="gettingStartedModalLabel">
+                        <i class="fas fa-rocket me-2"></i>Getting Started with OpenFOAM AI Assistant
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>                <div class="modal-body">
+                    <h6><i class="fas fa-comments text-primary me-2"></i>AI Chat Assistant</h6>
+                    <p>Start a conversation about OpenFOAM configurations, troubleshooting, or best practices. Choose between:</p>
+                    <ul>
+                        <li><strong>Simple LLM:</strong> General OpenFOAM knowledge and assistance</li>
+                        <li><strong>RAG System:</strong> Context-aware responses based on your OpenFOAM knowledge base</li>
+                    </ul>
+                    
+                    <h6 class="mt-4"><i class="fas fa-magic text-success me-2"></i>Integrated Converter</h6>
+                    <p>Choose your output type for each message:</p>
+                    <ul>
+                        <li><strong>💬 Text Response:</strong> Get explanations, guidance, and OpenFOAM help</li>
+                        <li><strong>🔄 Convert to PyVnt:</strong> Convert OpenFOAM content to Python code</li>
+                        <li><strong>📝 Text + PyVnt:</strong> Get both explanation and converted code</li>
+                    </ul>
+                    
+                    <h6 class="mt-4"><i class="fas fa-lightbulb text-warning me-2"></i>Example Usage</h6>
+                    <ul>
+                        <li><strong>Text mode:</strong> "Explain boundary conditions for pipe flow"</li>
+                        <li><strong>Convert mode:</strong> Paste OpenFOAM dictionary and get PyVnt code</li>
+                        <li><strong>Both mode:</strong> "Generate and convert a blockMeshDict for cylinder flow"</li>
+                    </ul>
+                    
+                    <h6 class="mt-4"><i class="fas fa-star text-info me-2"></i>Tips</h6>
+                    <ul>
+                        <li>Switch output types anytime during your conversation</li>
+                        <li>Use convert mode when you have existing OpenFOAM code to convert</li>
+                        <li>Use both mode when you want explanations with code examples</li>
+                        <li>Try both LLM and RAG modes to see which works better for your needs</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="/chat" class="btn btn-primary">Start Chatting</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

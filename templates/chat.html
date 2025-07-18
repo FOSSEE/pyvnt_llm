@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenFOAM AI Chat</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        .chat-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            max-width: 100%;
+            overflow: hidden;
+        }
+        .chat-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .chat-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #ffffff;
+            scroll-behavior: smooth;
+        }
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease-in;
+        }
+        .user-message {
+            justify-content: flex-end;
+        }
+        .bot-message {
+            justify-content: flex-start;
+        }
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            hyphens: auto;
+        }
+        .user-message .message-content {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 15px;
+            border-bottom-right-radius: 4px;
+        }
+        .bot-message .message-content {
+            background: #e9ecef;
+            color: #333;
+            margin-right: 15px;
+            border-bottom-left-radius: 4px;
+        }
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+        }
+        .user-avatar {
+            background: #6c757d;
+            color: white;
+        }
+        .bot-avatar {
+            background: #28a745;
+            color: white;
+        }
+        .rag-avatar {
+            background: #007bff;
+            color: white;
+        }
+        .chat-input-container {
+            background: white;
+            padding: 15px;
+            border-top: 1px solid #dee2e6;
+            flex-shrink: 0;
+        }
+        .chat-input {
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            padding: 12px 20px;
+            resize: none;
+            transition: border-color 0.3s ease;
+        }
+        .chat-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .btn-send {
+            border-radius: 50%;
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+        .btn-send:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        .typing-indicator {
+            display: none;
+            padding: 10px 15px;
+            color: #6c757d;
+            font-style: italic;
+            font-size: 0.9rem;
+        }        .sources {
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 3px solid #007bff;
+            font-size: 0.85rem;
+        }
+        .source-item {
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        
+        /* Converter output styles */
+        .converter-output {
+            margin-top: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #e9ecef;
+        }
+        .converter-header {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .converter-code {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 12px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .copy-btn {
+            background: transparent;
+            border: 1px solid #6c757d;
+            color: #6c757d;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .copy-btn:hover {
+            background: #6c757d;
+            color: white;
+        }
+        .copy-btn.copied {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        
+        .chat-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .chat-controls .btn {
+            border-radius: 20px;
+            font-size: 0.85rem;
+            padding: 6px 15px;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .chat-header {
+                padding: 12px 15px;
+            }
+            .chat-header h2 {
+                font-size: 1.3rem;
+            }
+            .chat-messages {
+                padding: 10px;
+            }
+            .message-content {
+                max-width: 85%;
+                padding: 10px 14px;
+                font-size: 0.9rem;
+            }
+            .message-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+            .user-message .message-content {
+                margin-left: 10px;
+            }
+            .bot-message .message-content {
+                margin-right: 10px;
+            }
+            .chat-input-container {
+                padding: 10px;
+            }
+            .chat-input {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: 10px 15px;
+            }
+            .btn-send {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }            .chat-controls {
+                justify-content: center;
+                flex-direction: column;
+                gap: 10px;
+                padding: 10px;
+            }
+            .mode-selector, .chat-actions {
+                justify-content: center;
+                width: 100%;
+            }
+            .output-options {
+                width: 100%;
+                max-width: 250px;
+            }
+            .chat-controls .btn {
+                flex: 1;
+                min-width: 80px;
+                margin: 2px;
+            }
+        }
+        
+        /* Very small screens */
+        @media (max-width: 480px) {
+            .message-content {
+                max-width: 90%;
+                font-size: 0.85rem;
+            }
+            .chat-controls .btn {
+                font-size: 0.8rem;
+                padding: 5px 10px;
+            }
+        }
+          /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .chat-header {
+                padding: 8px 15px;
+            }
+            .chat-header h2 {
+                font-size: 1.1rem;
+            }
+            .chat-messages {
+                padding: 8px;
+            }
+            .chat-input-container {
+                padding: 8px;
+            }
+        }
+          .chat-controls {
+            background: white;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .mode-selector {
+            display: flex;
+            gap: 10px;
+        }
+        .output-options {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 180px;
+        }
+        .chat-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-mode {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 2px solid #dee2e6;
+            background: white;
+            color: #6c757d;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        .btn-mode.active {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-color: transparent;
+        }
+        .btn-mode:hover {
+            color: white;
+            background: #6c757d;
+            text-decoration: none;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h2><i class="fas fa-comments me-2"></i>OpenFOAM AI Assistant</h2>
+            <p class="mb-0">Your intelligent CFD companion</p>
+        </div>
+          <div class="chat-controls">
+            <div class="mode-selector">
+                <button class="btn-mode" id="simple-mode" onclick="setMode('simple')">
+                    <i class="fas fa-robot me-2"></i>Simple LLM
+                </button>
+                {% if rag_available %}
+                <button class="btn-mode" id="rag-mode" onclick="setMode('rag')">
+                    <i class="fas fa-database me-2"></i>RAG System
+                </button>
+                {% endif %}
+            </div>
+            <div class="output-options">
+                <label class="form-label mb-1"><small>Output Type:</small></label>
+                <select class="form-select form-select-sm" id="output-type" onchange="updateOutputType()">
+                    <option value="text">💬 Text Response</option>
+                    <option value="convert">🔄 Convert to PyVnt</option>
+                    <option value="both">📝 Text + PyVnt Code</option>
+                </select>
+            </div>            <div class="chat-actions">
+                <button class="btn btn-outline-secondary btn-sm" onclick="clearChat()">
+                    <i class="fas fa-trash me-2"></i>Clear Chat
+                </button>
+                {% if pyvnt_llm_available %}
+                <button class="btn btn-outline-success btn-sm" onclick="showQuickGenerate()">
+                    <i class="fas fa-wand-magic-sparkles me-2"></i>Quick Generate
+                </button>
+                {% endif %}
+                <a href="/" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-home me-2"></i>Home
+                </a>
+                {% if pyvnt_llm_available %}
+                <a href="/generator" class="btn btn-outline-info btn-sm" target="_blank">
+                    <i class="fas fa-file-code me-2"></i>File Generator
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                <div class="message-avatar bot-avatar">
+                    <i class="fas fa-robot"></i>
+                </div>                <div class="message-content">
+                    <strong>Welcome to OpenFOAM AI Assistant!</strong><br>
+                    Choose your mode and output type, then start asking questions about OpenFOAM configurations, solvers, or troubleshooting.
+                    <br><br>
+                    <strong>Output Options:</strong>
+                    <ul class="mb-2">
+                        <li><strong>💬 Text Response:</strong> Get explanations and guidance</li>
+                        <li><strong>🔄 Convert to PyVnt:</strong> Convert OpenFOAM code to Python</li>
+                        <li><strong>📝 Text + PyVnt:</strong> Get both explanation and code</li>
+                    </ul>
+                    <strong>Example questions:</strong>
+                    <ul class="mb-0">
+                        <li>Generate a blockMeshDict for cylinder flow</li>
+                        <li>Create a controlDict for turbulent simulation</li>
+                        <li>Convert this blockMeshDict to PyVnt code</li>
+                        <li>Explain and convert fvSchemes for LES modeling</li>
+                    </ul>
+                </div>
+            </div>
+        </div>        <div class="typing-indicator" id="typing-indicator">
+            <i class="fas fa-robot me-2"></i>Assistant is typing...
+        </div>
+
+        <div class="chat-input-container">
+            <div class="input-group">
+                <input type="text" class="form-control chat-input" id="message-input" placeholder="Ask me anything about OpenFOAM..." disabled>
+                <button class="btn btn-primary btn-send" id="send-button" onclick="sendMessage()" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>    <script>
+        const socket = io();
+        let currentMode = 'simple';
+        let currentOutputType = 'text';
+        let chatReady = false;
+
+        // Socket event handlers
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
+
+        socket.on('connected', function(data) {
+            console.log('Session ID:', data.session_id);
+            // Start with simple mode by default
+            setMode('simple');
+        });
+
+        socket.on('chat_ready', function(data) {
+            chatReady = true;
+            document.getElementById('message-input').disabled = false;
+            document.getElementById('send-button').disabled = false;
+            
+            addMessage('bot', data.message, data.type);
+        });        socket.on('message_response', function(data) {
+            hideTyping();
+            addMessage('bot', data.response, data.type, data.sources, data.converter_output);
+        });
+
+        socket.on('typing', function(data) {
+            if (data.typing) {
+                showTyping();
+            } else {
+                hideTyping();
+            }
+        });
+
+        socket.on('error', function(data) {
+            hideTyping();
+            addMessage('bot', '❌ ' + data.message, 'error');
+        });
+
+        socket.on('chat_cleared', function() {
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.innerHTML = `
+                <div class="message bot-message">
+                    <div class="message-avatar bot-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        Chat history cleared! How can I help you?
+                    </div>
+                </div>
+            `;
+        });        // UI Functions
+        function updateOutputType() {
+            currentOutputType = document.getElementById('output-type').value;
+            console.log('Output type changed to:', currentOutputType);
+        }
+        
+        function setMode(mode) {
+            currentMode = mode;
+            
+            // Update button states
+            document.querySelectorAll('.btn-mode').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(mode + '-mode').classList.add('active');
+            
+            // Start chat with selected mode
+            const useRag = mode === 'rag';
+            socket.emit('start_chat', { use_rag: useRag });
+            
+            chatReady = false;
+            document.getElementById('message-input').disabled = true;
+            document.getElementById('send-button').disabled = true;
+        }        function sendMessage() {
+            const input = document.getElementById('message-input');
+            const message = input.value.trim();
+            
+            if (!message || !chatReady) return;
+            
+            addMessage('user', message);
+            input.value = '';
+            
+            showTyping();
+            socket.emit('send_message', { 
+                message: message, 
+                output_type: currentOutputType 
+            });
+        }        function addMessage(sender, content, type = 'simple', sources = [], converterOutput = null) {
+            const messagesContainer = document.getElementById('chat-messages');
+            const messageDiv = document.createElement('div');
+            
+            const isUser = sender === 'user';
+            const avatarClass = isUser ? 'user-avatar' : (type === 'rag' ? 'rag-avatar' : 'bot-avatar');
+            const avatarIcon = isUser ? 'fas fa-user' : 'fas fa-robot';
+            
+            let sourcesHtml = '';
+            if (sources && sources.length > 0) {
+                sourcesHtml = `
+                    <div class="sources">
+                        <strong><i class="fas fa-file-text me-2"></i>Sources (${sources.length} files):</strong>
+                        ${sources.slice(0, 5).map((source, index) => 
+                            `<div class="source-item">${index + 1}. ${source}</div>`
+                        ).join('')}
+                        ${sources.length > 5 ? `<div class="source-item">... and ${sources.length - 5} more</div>` : ''}
+                    </div>
+                `;
+            }
+            
+            let converterHtml = '';
+            if (converterOutput && converterOutput.pyvnt_code) {
+                const uniqueId = 'converter-' + Date.now();
+                converterHtml = `
+                    <div class="converter-output">
+                        <div class="converter-header">
+                            <span><i class="fas fa-code me-2"></i>PyVnt Code</span>
+                            <button class="copy-btn" onclick="copyConverterCode('${uniqueId}')">
+                                <i class="fas fa-copy me-1"></i>Copy
+                            </button>
+                        </div>
+                        <div class="converter-code" id="${uniqueId}">${escapeHtml(converterOutput.pyvnt_code)}</div>
+                    </div>
+                `;
+            }
+            
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.innerHTML = `
+                <div class="message-avatar ${avatarClass}">
+                    <i class="${avatarIcon}"></i>
+                </div>
+                <div class="message-content">
+                    <pre style="white-space: pre-wrap; font-family: inherit; margin: 0; background: transparent; border: none; padding: 0;">${content}</pre>
+                    ${sourcesHtml}
+                    ${converterHtml}
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typing-indicator').style.display = 'block';
+            const messagesContainer = document.getElementById('chat-messages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }        function hideTyping() {
+            document.getElementById('typing-indicator').style.display = 'none';
+        }
+
+        function clearChat() {
+            socket.emit('clear_chat');
+        }
+
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function copyConverterCode(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                // Find the copy button and update it
+                const copyBtn = element.parentElement.querySelector('.copy-btn');
+                const originalHtml = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+                copyBtn.classList.add('copied');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHtml;
+                    copyBtn.classList.remove('copied');
+                }, 2000);
+            }).catch(err => {
+                alert('Failed to copy to clipboard');
+                console.error('Copy failed:', err);
+            });
+        }        // Enter key to send message
+        document.getElementById('message-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        {% if pyvnt_llm_available %}
+        function showQuickGenerate() {
+            const modal = new bootstrap.Modal(document.getElementById('quickGenerateModal'));
+            modal.show();
+        }
+
+        function quickGenerate() {
+            const prompt = document.getElementById('quickPrompt').value.trim();
+            const fileType = document.getElementById('quickFileType').value;
+
+            if (!prompt) {
+                alert('Please enter a prompt');
+                return;
+            }
+
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('quickGenerateModal')).hide();
+
+            // Add user message to chat
+            addMessage(`Generate ${fileType}: ${prompt}`, 'user');
+            setTyping(true);
+
+            // Call the generation API
+            fetch('/api/generate_file', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt: prompt,
+                    file_type: fileType,
+                    mode: 'generate'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                setTyping(false);
+                if (data.success) {
+                    addMessage(
+                        `✅ Generated ${fileType} successfully!\\n\\n` + 
+                        '```openfoam\\n' + data.content + '\\n```',
+                        'assistant'
+                    );
+                } else {
+                    addMessage(`❌ Error generating ${fileType}: ${data.error}`, 'assistant');
+                }
+            })
+            .catch(error => {
+                setTyping(false);
+                console.error('Error:', error);
+                addMessage('❌ Network error occurred during generation', 'assistant');
+            });
+
+            // Clear form
+            document.getElementById('quickPrompt').value = '';
+            document.getElementById('quickFileType').value = 'controlDict';
+        }
+        {% endif %}
+    </script>
+
+    {% if pyvnt_llm_available %}
+    <!-- Quick Generate Modal -->
+    <div class="modal fade" id="quickGenerateModal" tabindex="-1" aria-labelledby="quickGenerateModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickGenerateModalLabel">
+                        <i class="fas fa-wand-magic-sparkles me-2"></i>Quick File Generation
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="quickPrompt" class="form-label">Describe what you want to generate:</label>
+                        <textarea class="form-control" id="quickPrompt" rows="3" 
+                                placeholder="Example: Create controlDict for steady flow with simpleFoam"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="quickFileType" class="form-label">File Type:</label>
+                        <select class="form-select" id="quickFileType">
+                            <option value="controlDict">controlDict</option>
+                            <option value="fvSchemes">fvSchemes</option>
+                            <option value="fvSolution">fvSolution</option>
+                            <option value="blockMeshDict">blockMeshDict</option>
+                            <option value="transportProperties">transportProperties</option>
+                            <option value="turbulenceProperties">turbulenceProperties</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="quickGenerate()">
+                        <i class="fas fa-wand-magic-sparkles me-2"></i>Generate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+            }
+        });
+
+        // Auto-focus input
+        document.getElementById('message-input').focus();
+    </script>
+</body>
+</html>

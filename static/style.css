@@ -1,0 +1,335 @@
+/* Custom CSS for OpenFOAM AI Assistant */
+
+/* Base responsive utilities */
+.container-fluid {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+/* Mobile-first responsive design */
+@media (max-width: 576px) {
+    .container {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .hero-section {
+        padding: 50px 0 !important;
+    }
+    
+    .display-3 {
+        font-size: 2rem !important;
+    }
+    
+    .lead {
+        font-size: 1rem !important;
+    }
+    
+    .feature-card {
+        margin: 10px 0 !important;
+        padding: 20px !important;
+    }
+    
+    .feature-icon {
+        font-size: 2rem !important;
+    }
+    
+    .btn-custom {
+        padding: 10px 20px !important;
+        font-size: 0.9rem;
+        margin: 5px !important;
+    }
+    
+    .status-badge {
+        font-size: 0.7rem !important;
+        margin: 2px !important;
+        display: block;
+        text-align: center;
+        margin-bottom: 5px !important;
+    }
+}
+
+/* Tablet styles */
+@media (min-width: 577px) and (max-width: 768px) {
+    .hero-section {
+        padding: 70px 0 !important;
+    }
+    
+    .display-3 {
+        font-size: 2.5rem !important;
+    }
+    
+    .feature-card {
+        margin: 15px 0 !important;
+        padding: 25px !important;
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem !important;
+    }
+}
+
+/* Large tablet and small desktop */
+@media (min-width: 769px) and (max-width: 992px) {
+    .hero-section {
+        padding: 80px 0 !important;
+    }
+    
+    .feature-card {
+        padding: 28px !important;
+    }
+}
+
+/* Chat interface responsive styles */
+@media (max-width: 768px) {
+    .chat-container {
+        height: 100vh !important;
+    }
+    
+    .chat-header {
+        padding: 15px !important;
+    }
+    
+    .chat-header h2 {
+        font-size: 1.5rem !important;
+    }
+    
+    .message-content {
+        max-width: 85% !important;
+        padding: 12px 15px !important;
+        font-size: 0.9rem;
+    }
+    
+    .chat-input-container {
+        padding: 10px !important;
+    }
+    
+    .chat-input {
+        font-size: 16px !important; /* Prevents zoom on iOS */
+    }
+    
+    .btn-send {
+        padding: 10px 15px !important;
+    }
+    
+    .chat-controls {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    .chat-controls .btn {
+        width: 100% !important;
+        margin: 2px 0 !important;
+    }
+}
+
+/* Converter interface responsive styles */
+@media (max-width: 768px) {
+    .converter-container {
+        padding: 10px !important;
+    }
+    
+    .code-editor {
+        height: 250px !important;
+        font-size: 12px !important;
+    }
+    
+    .output-panel {
+        height: 200px !important;
+        font-size: 12px !important;
+    }
+    
+    .converter-buttons {
+        flex-direction: column !important;
+    }
+    
+    .converter-buttons .btn {
+        width: 100% !important;
+        margin: 5px 0 !important;
+    }
+}
+
+/* Ultra-wide screen optimizations */
+@media (min-width: 1400px) {
+    .container {
+        max-width: 1200px;
+    }
+    
+    .feature-card {
+        padding: 40px !important;
+    }
+    
+    .hero-section {
+        padding: 120px 0 !important;
+    }
+}
+
+/* Landscape mobile optimization */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero-section {
+        padding: 30px 0 !important;
+    }
+    
+    .chat-header {
+        padding: 10px !important;
+    }
+    
+    .chat-header h2 {
+        font-size: 1.2rem !important;
+    }
+    
+    .feature-card {
+        padding: 15px !important;
+        margin: 5px 0 !important;
+    }
+}
+
+/* Touch-friendly interactive elements */
+@media (pointer: coarse) {
+    .btn-custom {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    .feature-card {
+        touch-action: manipulation;
+    }
+    
+    .message-content {
+        touch-action: manipulation;
+    }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .feature-icon {
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+/* Scrollbar styling for webkit browsers */
+.chat-messages::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #000000;
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #000000;
+    border-radius: 10px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #000000;
+}
+
+/* Mobile scrollbar optimization */
+@media (max-width: 768px) {
+    .chat-messages::-webkit-scrollbar {
+        width: 4px;
+    }
+}
+
+/* Custom button hover effects */
+.btn-custom-hover {
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-custom-hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-custom-hover:hover::before {
+    left: 100%;
+}
+
+/* Loading animation */
+.loading-dots {
+    display: inline-block;
+}
+
+.loading-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0% { content: ''; }
+    25% { content: '.'; }
+    50% { content: '..'; }
+    75% { content: '...'; }
+    100% { content: ''; }
+}
+
+/* Flexible grid system for feature cards */
+.feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 2rem;
+}
+
+@media (max-width: 576px) {
+    .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        margin-top: 1rem;
+    }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+    .fade-in, .pulse, .btn-custom-hover {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* Print styles */
+@media print {
+    .hero-section {
+        background: white !important;
+        color: black !important;
+    }
+    
+    .feature-card {
+        border: 1px solid #ccc !important;
+        box-shadow: none !important;
+    }
+    
+    .btn-custom {
+        display: none !important;
+    }
+}
