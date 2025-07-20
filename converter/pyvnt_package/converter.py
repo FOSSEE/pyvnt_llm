@@ -11,6 +11,7 @@ import re
 import threading
 import time
 import google.generativeai as genai
+from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 import importlib.util
@@ -118,13 +119,20 @@ def create_output_directories():
     return directories
 
 def setup_gemini():
-    """Setup Gemini API client"""
+    """Setup Gemini API client using .env file"""
+    
+    # Load environment variables from .env file
+    load_dotenv()
+
+    # Read API key from loaded environment
     api_key = os.getenv('GEMINI_API_KEY')
     if not api_key:
-        print("Error: GEMINI_API_KEY environment variable not set")
-        print("Please set your Gemini API key: export GEMINI_API_KEY=your_api_key_here")
+        print("❌ Error: GEMINI_API_KEY not found in .env file.")
+        print("➡️  Please create a .env file with the following content:")
+        print("    GEMINI_API_KEY=your_api_key_here")
         sys.exit(1)
     
+    # Configure and return the model
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel('gemini-2.0-flash')
     return model
