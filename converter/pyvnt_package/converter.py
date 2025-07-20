@@ -159,8 +159,10 @@ def get_case_to_pyvnt_context():
 - Enforces interface for value properties used in Key_C.
 
 ### 2. Int_P, Flt_P, Str_P, Enm_P
-- Store typed values with constraints (e.g., min/max/default for ints/floats, set of choices for enums).
+- Store typed values with constraints (e.g., minimum/maximum/default for ints/floats, set of choices for enums).
 - Example: `Enm_P('val1', items={'PCG', 'PBiCG', 'PBiCGStab'}, default='PCG')`
+- Example: `Flt_P('val1', minimum=1e-12, maximum=1.0, default=1e-8)`
+- Example: `Int_P('val1', minimum=0, maximum=10, default=2)`
 
 ### 3. Key_C
 - Represents a dictionary-like node holding multiple ValueProperty instances.
@@ -181,6 +183,7 @@ def get_case_to_pyvnt_context():
 - MUST create root node with variable name 'root': `root = Node_C('name', None, None)`
 - End with: `show_tree(root)`
 - The root variable MUST be named 'root' - no other name is acceptable
+- Use 'minimum' and 'maximum' parameters for Flt_P and Int_P, NOT 'min' and 'max'
 """
 
 def get_pyvnt_to_openfoam_context():
@@ -208,7 +211,7 @@ You are an expert in converting pyvnt Python tree structures to OpenFOAM case fi
 # pyvnt structure
 p_node = Node_C('p', parent, None, 
     Key_C('solver', Enm_P('val1', default='PCG')),
-    Key_C('tolerance', Flt_P('val1', default=1e-06))
+    Key_C('tolerance', Flt_P('val1', minimum=1e-12, maximum=1.0, default=1e-06))
 )
 
 # OpenFOAM output
@@ -240,12 +243,13 @@ Requirements:
 1. Generate clean, working Python code using the pyvnt library
 2. Follow the exact patterns shown in the context examples
 3. Use appropriate property types (Int_P, Flt_P, Str_P, Enm_P)
-4. Set reasonable constraints (min/max values) and defaults based on typical OpenFOAM values
-5. Always pass `None` as the third argument to Node_C constructor for non-leaf nodes
-6. Include the final `show_tree(root)` call to display the structure
-7. Add appropriate comments explaining the structure
-8. MUST start with `from pyvnt import *`
-9. CRITICAL: The root node variable MUST be named 'root' - example: `root = Node_C('fvSolutions', None, None)`
+4. Set reasonable constraints (minimum/maximum values) and defaults based on typical OpenFOAM values
+5. Always use 'minimum' and 'maximum' parameters for Flt_P and Int_P, NOT 'min' and 'max'
+6. Always pass `None` as the third argument to Node_C constructor for non-leaf nodes
+7. Include the final `show_tree(root)` call to display the structure
+8. Add appropriate comments explaining the structure
+9. MUST start with `from pyvnt import *`
+10. CRITICAL: The root node variable MUST be named 'root' - example: `root = Node_C('fvSolutions', None, None)`
 
 Return ONLY the Python code, no explanations or markdown formatting.
 """
