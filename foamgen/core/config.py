@@ -5,12 +5,14 @@ FoamGenConfig: Handles configuration management for FoamGen, including API key s
 import os
 import json
 from pathlib import Path
+from dotenv import load_dotenv
 
 class FoamGenConfig:
     """Configuration management for FoamGen"""
 
     def __init__(self):
         self.config_file = Path.home() / ".foamgen_config.json"
+        self._env_loaded = False
         self.config = self.load_config()
 
     def load_config(self) -> dict:
@@ -20,7 +22,7 @@ class FoamGenConfig:
                 with open(self.config_file, 'r') as f:
                     return json.load(f)
             except Exception as e:
-                print(f"Warning: Could not load config file: {e}")
+                print(f"⚠️ Warning: Could not load config file: {e}")
 
         return {
             "api_key": "",
@@ -40,16 +42,25 @@ class FoamGenConfig:
             with open(self.config_file, 'w') as f:
                 json.dump(self.config, f, indent=2)
         except Exception as e:
-            print(f"Error saving config: {e}")
+            print(f"❌ Error saving config: {e}")
 
     def get_api_key(self) -> str:
-        """Get API key from config or environment"""
+        """Get API key from config, .env, or environment"""
+        # 1. Try from config
         api_key = self.config.get("api_key")
-        if not api_key:
-            api_key = os.getenv("TOGETHER_API_KEY")
+        if api_key:
+            return api_key
+
+        # 2. Load from .env file (only once)
+        if not self._env_loaded:
+            load_dotenv()
+            self._env_loaded = True
+
+        # 3. Try from environment (.env will populate os.environ)
+        api_key = os.getenv("TOGETHER_API_KEY")
         return api_key or ""
 
     def set_api_key(self, api_key: str):
-        """Set API key in config"""
+        """Set API key in config and save"""
         self.config["api_key"] = api_key
         self.save_config()
