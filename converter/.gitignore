@@ -176,6 +176,7 @@ cython_debug/
 
 generated_python_files/
 generated_text_files/
+converter/
 
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
